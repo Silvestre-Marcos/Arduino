@@ -1,48 +1,129 @@
-// example
-float y[4]={3, 4, 5, 6};
-float x[4]={2.9875,3.9937,4.9925,5.9925};
-float lrCoef[2]={0,0};
+#include <Wire.h>
+#include "Adafruit_AS726x.h"
 
-void setup(){
+//create the object
+Adafruit_AS726x ams;
+
+//buffer to hold raw values
+uint16_t sensorValues[AS726x_NUM_CHANNELS];
+
+//buffer to hold calibrated values (not used by default in this example)
+//float calibratedValues[AS726x_NUM_CHANNELS];
+
+int numReads = 10;
+int cont;
+float sum;
+float average;
+
+int pinoRed = 9; //PINO DIGITAL UTILIZADO PELO TERMINAL VERMELHO
+int pinoGreen = 10; //PINO DIGITAL UTILIZADO PELO TERMINAL VERDE
+int pinoBlue = 11; //PINO DIGITAL UTILIZADO PELO TERMINAL AZUL
+
+int val; //VARIÁVEL DO TIPO INTEIRA
+
+// EXEMPLO - http://en.wikipedia.org/wiki/Simple_linear_regression
+float x[11] = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
+float y[11] = {40855.80, 0.95, 0.85, 0.76, 0.71, 0.65, 0.52, 0.43, 0.32, 0.22, 0.11};
+float lrCoef[2] = {0, 0};
+
+float sum_x = 0;
+float sum_y = 0;
+float sum_xy = 0;
+float sum_xx = 0;
+
+void setup() {
   Serial.begin(9600);
-  delay(1000);
+  while(!Serial);
+
+  pinMode(pinoRed, OUTPUT); //DEFINE O PINO COMO SAÍDA
+  pinMode(pinoBlue, OUTPUT); //DEFINE O PINO COMO SAÍDA
+  pinMode(pinoGreen, OUTPUT); //DEFINE O PINO COMO SAÍDA  
+
+  analogWrite(pinoRed, 255); //PINO RECEBE O VALOR
+  analogWrite(pinoGreen, 223); //PINO RECEBE O VALOR
+  analogWrite(pinoBlue, 0); //PINO RECEBE O VALOR
+  delay (10); //INTERVALO DE 10 MILISSEGUNDOS
   
-  // call simple linear regression algorithm
-  simpLinReg(x, y, lrCoef, 4);
+  //initialize digital pin LED_BUILTIN as an output.
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  //begin and make sure we can talk to the sensor
+  if(!ams.begin()){
+    Serial.println("could not connect to sensor! Please check your wiring.");
+    while(1);
+  }
+
+  do {
+   //read the device temperature
+   //uint8_t temp = ams.readTemperature();
   
-  Serial.print(lrCoef[0],8);
-  Serial.print(" ");
-  Serial.println(lrCoef[1],8);
+   //ams.drvOn(); //uncomment this if you want to use the driver LED for readings
+   ams.startMeasurement(); //begin a measurement
+  
+   //wait till data is available
+   bool rdy = false;
+   while(!rdy){
+     delay(1000);
+     rdy = ams.dataReady();
+   }
+   //ams.drvOff(); //uncomment this if you want to use the driver LED for readings
+
+   //read the values!
+   ams.readRawValues(sensorValues);
+   //ams.readCalibratedValues(calibratedValues);
+
+   for (int k = 0; k < numReads; k++){
+    sum += sensorValues[AS726x_ORANGE];
+   }
+
+   //Serial.print("Temp: "); Serial.print(temp);
+   //Serial.print(" Violet: "); Serial.print(sensorValues[AS726x_VIOLET]);
+   //Serial.print(" Blue: "); Serial.print(sensorValues[AS726x_BLUE]);
+   //Serial.print(" Green: "); Serial.print(sensorValues[AS726x_GREEN]);
+   //Serial.print(" Yellow: "); Serial.print(sensorValues[AS726x_YELLOW]);
+   Serial.print(" Orange: "); Serial.print(sensorValues[AS726x_ORANGE]);
+   //Serial.print(" Red: "); Serial.print(sensorValues[AS726x_RED]);
+   Serial.println();
+   Serial.println();
+   cont++;
+  } while(cont < numReads); 
+
+   average = sum/(numReads*numReads);
+   Serial.print(" Orange Average I0 = "); Serial.print(average);
+ 
+ y[0] = average;
+ float y0 = y[0];
+ for(int i=0; i<11; i++){
+  y[i]=-log10(y[i]/y0);
+ }
+
+ // CHAMA O ALGORITMO DE REGRESSÃO LINEAR
+ simpLinReg(x, y, lrCoef, 11);
+ Serial.println("");
+ Serial.print(" Abs = ");
+ Serial.print(lrCoef[0], 4);
+
+ if (lrCoef[1] > 0){
+  Serial.print("*Conc + ");
+ }
+ else{
+  Serial.print("*Conc ");
+ }
+ 
+ Serial.println(lrCoef[1], 4);
 }
 
-
-void loop(){
+void loop() {
 }
-
 
 void simpLinReg(float* x, float* y, float* lrCoef, int n){
-  // pass x and y arrays (pointers), lrCoef pointer, and n.  The lrCoef array is comprised of the slope=lrCoef[0] and intercept=lrCoef[1].  n is length of the x and y arrays.
-  // http://en.wikipedia.org/wiki/Simple_linear_regression
-
-  // initialize variables
-  float xbar=0;
-  float ybar=0;
-  float xybar=0;
-  float xsqbar=0;
-  
-  // calculations required for linear regression
-  for (int i=0; i<n; i++){
-    xbar=xbar+x[i];
-    ybar=ybar+y[i];
-    xybar=xybar+x[i]*y[i];
-    xsqbar=xsqbar+x[i]*x[i];
-  }
-  xbar=xbar/n;
-  ybar=ybar/n;
-  xybar=xybar/n;
-  xsqbar=xsqbar/n;
-  
-  // simple linear regression algorithm
-  lrCoef[0]=(xybar-xbar*ybar)/(xsqbar-xbar*xbar);
-  lrCoef[1]=ybar-lrCoef[0]*xbar;
+ // CALCULOS PARA REGRESSÃO LINEAR
+ for (int i=0; i<n; i++){
+  sum_x += x[i];
+  sum_y += y[i];
+  sum_xy = sum_xy+x[i]*y[i];
+  sum_xx = sum_xx+x[i]*x[i];
+ }
+ lrCoef[0]=(n*sum_xy-sum_x*sum_y)/(n*sum_xx-sum_x*sum_x);
+ lrCoef[1]=(sum_y/n)-((lrCoef[0]*sum_x)/n);
 }
