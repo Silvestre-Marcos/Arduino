@@ -1,5 +1,8 @@
 #include <Wire.h>
 #include "Adafruit_AS726x.h"
+#include <ezButton.h>
+
+ezButton button(7);  //create ezButton object that attach to pin 7;
 
 //create the object
 Adafruit_AS726x ams;
@@ -34,10 +37,18 @@ float sum_xx = 0;
 void setup() {
   Serial.begin(9600);
   while(!Serial);
+  button.setDebounceTime(50); //set debounce time to 50 milliseconds
 
   pinMode(pinoRed, OUTPUT); //DEFINE O PINO COMO SAÍDA
   pinMode(pinoBlue, OUTPUT); //DEFINE O PINO COMO SAÍDA
   pinMode(pinoGreen, OUTPUT); //DEFINE O PINO COMO SAÍDA  
+
+  //PRIMEIRA PARTE DO CÓDIGO
+  do {
+    button.loop();
+  } while (!button.isPressed());
+  Serial.println("Measuring the Blank Value ...");
+  Serial.println();
 
   analogWrite(pinoRed, 255); //PINO RECEBE O VALOR
   analogWrite(pinoGreen, 223); //PINO RECEBE O VALOR
