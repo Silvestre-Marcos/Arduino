@@ -20,6 +20,7 @@ float sum1;
 float sum2;
 float average1;
 float average2;
+float conc;
 
 int pinoRed = 9; //PINO DIGITAL UTILIZADO PELO TERMINAL VERMELHO
 int pinoGreen = 10; //PINO DIGITAL UTILIZADO PELO TERMINAL VERDE
@@ -180,7 +181,11 @@ void setup() {
   } while(cont2 < numReads); 
 
    average2 = sum2/(numReads*numReads);
-   Serial.print(" Orange Light Average I = "); Serial.print(average2);  
+   Serial.print(" Orange Abs Light Average = "); Serial.print(average2);  
+   Serial.println();
+
+   conc = (-log10(average2/y0)-lrCoef[1])/lrCoef[0];
+   Serial.print(" Ozone Conc = "); Serial.print(conc);
 }
 
 void simpLinReg(float* x, float* y, float* lrCoef, int n){
