@@ -181,7 +181,7 @@ void setup() {
   } while(cont2 < numReads); 
 
    average2 = sum2/(numReads*numReads);
-   Serial.print(" Orange Abs Light Average = "); Serial.print(average2);  
+   Serial.print(" Orange Light Average I = "); Serial.print(average2);  
    Serial.println();
 
    conc = (-log10(average2/y0)-lrCoef[1])/lrCoef[0];
