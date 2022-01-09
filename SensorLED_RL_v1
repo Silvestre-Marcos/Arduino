@@ -19,11 +19,11 @@ int pinoRed = 9; //PINO DIGITAL UTILIZADO PELO TERMINAL VERMELHO
 int pinoGreen = 10; //PINO DIGITAL UTILIZADO PELO TERMINAL VERDE
 int pinoBlue = 11; //PINO DIGITAL UTILIZADO PELO TERMINAL AZUL
 
-int val; //VARIÁVEL DO TIPO INTEIRA
+int val;
 
-// EXEMPLO - http://en.wikipedia.org/wiki/Simple_linear_regression
+//EXEMPLO - http://en.wikipedia.org/wiki/Simple_linear_regression
 float x[11] = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1};
-float y[11] = {40855.80, 0.95, 0.85, 0.76, 0.71, 0.65, 0.52, 0.43, 0.32, 0.22, 0.11};
+float y[11] = {0, 0.95, 0.85, 0.76, 0.71, 0.65, 0.52, 0.43, 0.32, 0.22, 0.11};
 float lrCoef[2] = {0, 0};
 
 float sum_x = 0;
@@ -42,9 +42,9 @@ void setup() {
   analogWrite(pinoRed, 255); //PINO RECEBE O VALOR
   analogWrite(pinoGreen, 223); //PINO RECEBE O VALOR
   analogWrite(pinoBlue, 0); //PINO RECEBE O VALOR
-  delay (10); //INTERVALO DE 10 MILISSEGUNDOS
+  delay (10);
   
-  //initialize digital pin LED_BUILTIN as an output.
+  //initialize digital pin LED_BUILTIN as an output
   pinMode(LED_BUILTIN, OUTPUT);
 
   //begin and make sure we can talk to the sensor
@@ -55,7 +55,7 @@ void setup() {
 
   do {
    //read the device temperature
-   //uint8_t temp = ams.readTemperature();
+   uint8_t temp = ams.readTemperature();
   
    //ams.drvOn(); //uncomment this if you want to use the driver LED for readings
    ams.startMeasurement(); //begin a measurement
@@ -68,15 +68,15 @@ void setup() {
    }
    //ams.drvOff(); //uncomment this if you want to use the driver LED for readings
 
-   //read the values!
+   //read the values
    ams.readRawValues(sensorValues);
    //ams.readCalibratedValues(calibratedValues);
 
-   for (int k = 0; k < numReads; k++){
+   for (int i = 0; i < numReads; i++){
     sum += sensorValues[AS726x_ORANGE];
    }
 
-   //Serial.print("Temp: "); Serial.print(temp);
+   Serial.print(" Temp: "); Serial.print(temp);
    //Serial.print(" Violet: "); Serial.print(sensorValues[AS726x_VIOLET]);
    //Serial.print(" Blue: "); Serial.print(sensorValues[AS726x_BLUE]);
    //Serial.print(" Green: "); Serial.print(sensorValues[AS726x_GREEN]);
@@ -89,15 +89,15 @@ void setup() {
   } while(cont < numReads); 
 
    average = sum/(numReads*numReads);
-   Serial.print(" Orange Average I0 = "); Serial.print(average);
+   Serial.print(" Orange Blank Average I0 = "); Serial.print(average);
  
  y[0] = average;
  float y0 = y[0];
- for(int i=0; i<11; i++){
-  y[i]=-log10(y[i]/y0);
+ for(int j = 0; j < 11; j++){
+  y[j] = -log10(y[j]/y0);
  }
 
- // CHAMA O ALGORITMO DE REGRESSÃO LINEAR
+ //CHAMA O ALGORITMO DE REGRESSÃO LINEAR
  simpLinReg(x, y, lrCoef, 11);
  Serial.println("");
  Serial.print(" Abs = ");
@@ -118,12 +118,12 @@ void loop() {
 
 void simpLinReg(float* x, float* y, float* lrCoef, int n){
  // CALCULOS PARA REGRESSÃO LINEAR
- for (int i=0; i<n; i++){
-  sum_x += x[i];
-  sum_y += y[i];
-  sum_xy = sum_xy+x[i]*y[i];
-  sum_xx = sum_xx+x[i]*x[i];
+ for (int k = 0; k < n; k++){
+  sum_x += x[k];
+  sum_y += y[k];
+  sum_xy = sum_xy+x[k]*y[k];
+  sum_xx = sum_xx+x[k]*x[k];
  }
- lrCoef[0]=(n*sum_xy-sum_x*sum_y)/(n*sum_xx-sum_x*sum_x);
- lrCoef[1]=(sum_y/n)-((lrCoef[0]*sum_x)/n);
+ lrCoef[0] = (n*sum_xy-sum_x*sum_y)/(n*sum_xx-sum_x*sum_x);
+ lrCoef[1] = (sum_y/n)-((lrCoef[0]*sum_x)/n);
 }
