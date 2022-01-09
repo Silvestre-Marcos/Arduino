@@ -14,9 +14,12 @@ uint16_t sensorValues[AS726x_NUM_CHANNELS];
 //float calibratedValues[AS726x_NUM_CHANNELS];
 
 int numReads = 10;
-int cont;
-float sum;
-float average;
+int cont1;
+int cont2;
+float sum1;
+float sum2;
+float average1;
+float average2;
 
 int pinoRed = 9; //PINO DIGITAL UTILIZADO PELO TERMINAL VERMELHO
 int pinoGreen = 10; //PINO DIGITAL UTILIZADO PELO TERMINAL VERDE
@@ -43,13 +46,6 @@ void setup() {
   pinMode(pinoBlue, OUTPUT); //DEFINE O PINO COMO SAÍDA
   pinMode(pinoGreen, OUTPUT); //DEFINE O PINO COMO SAÍDA  
 
-  //PRIMEIRA PARTE DO CÓDIGO
-  do {
-    button.loop();
-  } while (!button.isPressed());
-  Serial.println("Measuring the Blank Value ...");
-  Serial.println();
-
   analogWrite(pinoRed, 255); //PINO RECEBE O VALOR
   analogWrite(pinoGreen, 223); //PINO RECEBE O VALOR
   analogWrite(pinoBlue, 0); //PINO RECEBE O VALOR
@@ -57,6 +53,13 @@ void setup() {
   
   //initialize digital pin LED_BUILTIN as an output
   pinMode(LED_BUILTIN, OUTPUT);
+
+  //PRIMEIRA PARTE DO CÓDIGO
+  do {
+    button.loop();
+  } while (!button.isPressed());
+  Serial.println("MEASURING THE BLANK VALUE ...");
+  Serial.println();
 
   //begin and make sure we can talk to the sensor
   if(!ams.begin()){
@@ -84,7 +87,7 @@ void setup() {
    //ams.readCalibratedValues(calibratedValues);
 
    for (int i = 0; i < numReads; i++){
-    sum += sensorValues[AS726x_ORANGE];
+    sum1 += sensorValues[AS726x_ORANGE];
    }
 
    Serial.print(" Temp: "); Serial.print(temp);
@@ -96,13 +99,13 @@ void setup() {
    //Serial.print(" Red: "); Serial.print(sensorValues[AS726x_RED]);
    Serial.println();
    Serial.println();
-   cont++;
-  } while(cont < numReads); 
+   cont1++;
+  } while(cont1 < numReads); 
 
-   average = sum/(numReads*numReads);
-   Serial.print(" Orange Blank Average I0 = "); Serial.print(average);
+   average1 = sum1/(numReads*numReads);
+   Serial.print(" Orange Blank Average I0 = "); Serial.print(average1);
  
- y[0] = average;
+ y[0] = average1;
  float y0 = y[0];
  for(int j = 0; j < 11; j++){
   y[j] = -log10(y[j]/y0);
@@ -122,9 +125,62 @@ void setup() {
  }
  
  Serial.println(lrCoef[1], 4);
-}
 
-void loop() {
+  do {
+    button.loop();
+  } while (!button.isReleased());
+  Serial.println();
+  Serial.println("PRESS THE BUTTON AGAIN TO MEASURE THE LIGHT VALUE ...");
+  Serial.println();
+
+  //SEGUNDA PARTE DO CÓDIGO
+  do {
+    button.loop();
+  } while (!button.isPressed());
+
+  //begin and make sure we can talk to the sensor
+  if(!ams.begin()){
+    Serial.println("could not connect to sensor! Please check your wiring.");
+    while(1);
+  }
+
+  do {
+   //read the device temperature
+   uint8_t temp = ams.readTemperature();
+  
+   //ams.drvOn(); //uncomment this if you want to use the driver LED for readings
+   ams.startMeasurement(); //begin a measurement
+  
+   //wait till data is available
+   bool rdy = false;
+   while(!rdy){
+     delay(1000);
+     rdy = ams.dataReady();
+   }
+   //ams.drvOff(); //uncomment this if you want to use the driver LED for readings
+
+   //read the values
+   ams.readRawValues(sensorValues);
+   //ams.readCalibratedValues(calibratedValues);
+
+   for (int l = 0; l < numReads; l++){
+    sum2 += sensorValues[AS726x_ORANGE];
+   }
+
+   Serial.print(" Temp: "); Serial.print(temp);
+   //Serial.print(" Violet: "); Serial.print(sensorValues[AS726x_VIOLET]);
+   //Serial.print(" Blue: "); Serial.print(sensorValues[AS726x_BLUE]);
+   //Serial.print(" Green: "); Serial.print(sensorValues[AS726x_GREEN]);
+   //Serial.print(" Yellow: "); Serial.print(sensorValues[AS726x_YELLOW]);
+   Serial.print(" Orange: "); Serial.print(sensorValues[AS726x_ORANGE]);
+   //Serial.print(" Red: "); Serial.print(sensorValues[AS726x_RED]);
+   Serial.println();
+   Serial.println();
+   cont2++;
+  } while(cont2 < numReads); 
+
+   average2 = sum2/(numReads*numReads);
+   Serial.print(" Orange Light Average I = "); Serial.print(average2);  
 }
 
 void simpLinReg(float* x, float* y, float* lrCoef, int n){
@@ -137,4 +193,7 @@ void simpLinReg(float* x, float* y, float* lrCoef, int n){
  }
  lrCoef[0] = (n*sum_xy-sum_x*sum_y)/(n*sum_xx-sum_x*sum_x);
  lrCoef[1] = (sum_y/n)-((lrCoef[0]*sum_x)/n);
+}
+
+void loop() {
 }
